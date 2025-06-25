@@ -1,0 +1,64 @@
+# Built application files
+*.apk
+*.ap_
+
+# Files for the dex VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+.gradle/
+build/
+
+# NDK
+obj/
+
+# Captures and test outputs
+captures/
+output.json
+
+# APK and release artifacts
+app/normal/release/
+app/release/
+*.aar
+
+# Models and generated files
+/models/
+
+# Kotlin build cache
+.kotlinc/
+
+# KSP cache
+.ksp/
+
+# Signing files (keystore)
+*.jks
+*.keystore
+secrets.properties
+*.pem
+*.key
+
+# Lint & build reports
+*.log
+*.hprof
+
+# Optional
+*.swp
+*.swo
