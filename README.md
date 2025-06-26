@@ -1,1 +1,1 @@
-in progress
+project trashed
