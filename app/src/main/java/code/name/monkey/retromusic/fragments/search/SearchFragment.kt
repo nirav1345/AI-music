@@ -1,19 +1,12 @@
-/*
- * Copyright (c) 2020 Hemanth Savarla.
- *
- * Licensed under the GNU General Public License v3
- *
- * This is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
- *
- * This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- */
 package code.name.monkey.retromusic.fragments.search
-
+import code.name.monkey.retromusic.network.SoundCloudClient
+import code.name.monkey.retromusic.network.SoundcloudAPI
+import code.name.monkey.retromusic.model.Track
+import code.name.monkey.retromusic.model.TrackResponse
+import retrofit2.Call
+import retrofit2.Callback
+import android.util.Log
+import retrofit2.Response
 import android.app.Activity.RESULT_OK
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -44,6 +37,8 @@ import com.google.android.material.transition.MaterialFadeThrough
 import kotlinx.coroutines.Job
 import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent
 import java.util.*
+private const val CLIENT_ID = "3sN94fvc9AjpzCe1QvVlD3mFwKfucCeC"
+
 
 
 class SearchFragment : AbsMainActivityFragment(R.layout.fragment_search),
@@ -188,6 +183,43 @@ class SearchFragment : AbsMainActivityFragment(R.layout.fragment_search),
         val filter = getFilter()
         job?.cancel()
         job = libraryViewModel.search(query, filter)
+
+        if (filter == Filter.SONGS) {
+            val api = SoundCloudClient.getClient().create(SoundcloudAPI::class.java)
+            val call = api.searchTracks(query, CLIENT_ID)
+
+            call.enqueue(object : Callback<TrackResponse?> {
+                override fun onResponse(
+                    call: Call<TrackResponse?>,
+                    response: Response<TrackResponse?>
+                ) {
+
+                    Log.d("SoundCloud", "API Response: ${response.code()}")
+                    Log.d("SoundCloud", "Response successful: ${response.isSuccessful}")
+                    Log.d("SoundCloud", "Response body: ${response.body()}")
+                    if (response.isSuccessful && response.body() != null) {
+                        val tracks = response.body()?.collection ?: emptyList()
+                        val validTracks = tracks.filter { it.title != null }
+
+                        Log.d("SoundCloud", "Valid track count: ${validTracks.size}")
+                        validTracks.forEach {
+                            Log.d("SoundCloud", "Track: ${it.title} by ${it.user?.username}")
+                        }
+
+                        requireActivity().runOnUiThread {
+                            searchAdapter.addSoundCloudResults(validTracks)
+                        }
+                    } else {
+                        Log.e("SoundCloud", "Unsuccessful response: ${response.errorBody()?.string()}")
+                    }
+                }
+
+                override fun onFailure(call: Call<TrackResponse?>, t: Throwable) {
+                    Log.e("SoundCloud", "API call failed", t)
+                }
+            })
+
+        }
     }
 
     private fun getFilter(): Filter {

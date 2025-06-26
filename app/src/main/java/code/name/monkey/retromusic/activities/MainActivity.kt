@@ -42,6 +42,7 @@ class MainActivity : AbsCastActivity() {
     companion object {
         const val TAG = "MainActivity"
         const val EXPAND_PANEL = "expand_panel"
+        const val CLIENT_ID = "2t9loNQH90kzJcsFCODdigxfp325aq4z"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,8 +55,37 @@ class MainActivity : AbsCastActivity() {
         setupNavigationController()
 
         WhatsNewFragment.showChangeLog(this)
+        fetchSoundCloudTracks()
     }
+    private fun fetchSoundCloudTracks() {
+        val api = code.name.monkey.retromusic.network.SoundCloudClient.getClient()
+            .create(code.name.monkey.retromusic.network.SoundcloudAPI::class.java)
 
+        val call = api.searchTracks("lofi", CLIENT_ID)
+
+        call.enqueue(object : retrofit2.Callback<code.name.monkey.retromusic.model.TrackResponse> {
+            override fun onResponse(
+                call: retrofit2.Call<code.name.monkey.retromusic.model.TrackResponse>,
+                response: retrofit2.Response<code.name.monkey.retromusic.model.TrackResponse>
+            ) {
+                if (response.isSuccessful && response.body() != null) {
+                    val tracks = response.body()!!.collection
+                    for (track in tracks) {
+                        android.util.Log.d("SoundCloudTrack", "🎵 ${track.title}")
+                    }
+                } else {
+                    android.util.Log.e("SoundCloudAPI", "❌ API error or empty")
+                }
+            }
+
+            override fun onFailure(
+                call: retrofit2.Call<code.name.monkey.retromusic.model.TrackResponse>,
+                t: Throwable
+            ) {
+                android.util.Log.e("SoundCloudAPI", "💥 API call failed: ${t.message}")
+            }
+        })
+    }
     private fun setupNavigationController() {
         val navController = findNavController(R.id.fragment_container)
         val navInflater = navController.navInflater

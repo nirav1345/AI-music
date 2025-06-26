@@ -1,19 +1,7 @@
-/*
- * Copyright (c) 2020 Hemanth Savarla.
- *
- * Licensed under the GNU General Public License v3
- *
- * This is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
- *
- * This software is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- */
 package code.name.monkey.retromusic.adapter
-
+import code.name.monkey.retromusic.model.Track
+import android.content.Intent
+import android.net.Uri
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
@@ -53,8 +41,16 @@ class SearchAdapter(
         this.dataSet = dataSet
         notifyDataSetChanged()
     }
+    @SuppressLint("NotifyDataSetChanged")
+    fun addSoundCloudResults(tracks: List<Track>) {
+        val updatedList = dataSet.toMutableList()
+        updatedList.addAll(tracks)
+        swapDataSet(updatedList)
+    }
+
 
     override fun getItemViewType(position: Int): Int {
+        if (dataSet[position] is Track) return SOUNDCLOUD_TRACK
         if (dataSet[position] is Album) return ALBUM
         if (dataSet[position] is Artist) return if ((dataSet[position] as Artist).isAlbumArtist) ALBUM_ARTIST else ARTIST
         if (dataSet[position] is Genre) return GENRE
@@ -71,7 +67,6 @@ class SearchAdapter(
                     false
                 ), viewType
             )
-
             ALBUM, ARTIST, ALBUM_ARTIST -> ViewHolder(
                 LayoutInflater.from(activity).inflate(
                     R.layout.item_list_big,
@@ -79,7 +74,10 @@ class SearchAdapter(
                     false
                 ), viewType
             )
-
+            SOUNDCLOUD_TRACK -> ViewHolder(  // ✅ Add this
+                LayoutInflater.from(activity).inflate(R.layout.item_list, parent, false),
+                viewType
+            )
             else -> ViewHolder(
                 LayoutInflater.from(activity).inflate(R.layout.item_list, parent, false),
                 viewType
@@ -87,8 +85,19 @@ class SearchAdapter(
         }
     }
 
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         when (getItemViewType(position)) {
+
+            SOUNDCLOUD_TRACK -> {
+                holder.imageTextContainer?.isVisible = true
+                val track = dataSet[position] as Track
+                holder.title?.text = track.title
+                holder.text?.text = track.user.username
+                Glide.with(activity)
+                    .load(track.artwork_url ?: track.user.avatar_url)
+                    .into(holder.image!!)
+            }
             ALBUM -> {
                 holder.imageTextContainer?.isVisible = true
                 val album = dataSet[position] as Album
@@ -225,9 +234,15 @@ class SearchAdapter(
                     MusicPlayerRemote.playNext(item as Song)
                     MusicPlayerRemote.playNextSong()
                 }
+
+                SOUNDCLOUD_TRACK -> {
+                    val track = item as Track
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(track.permalink_url))
+                    activity.startActivity(intent)
+                }
             }
         }
-    }
+    } // ✅ This was missing – closes ViewHolder class
 
     companion object {
         private const val HEADER = 0
@@ -237,5 +252,6 @@ class SearchAdapter(
         private const val GENRE = 4
         private const val PLAYLIST = 5
         private const val ALBUM_ARTIST = 6
+        private const val SOUNDCLOUD_TRACK = 7
     }
 }
